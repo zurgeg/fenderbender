@@ -9,5 +9,5 @@ class USBDev:
   def send(self, packet):
     print(f"{self.name} ({self.devid}) on {self.port.pid}> {hex(packet)}")
   def recv(self, amount):
-    print(f"{self.port.num}< {hex(self.port.recv(amount)}")
+    print(f"{self.port.num}< {hex(self.port.recv(amount))}")
 
