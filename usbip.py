@@ -1,5 +1,5 @@
 # https://github.com/Frazew/PythonUSBIP/blob/master/USBIP.py
-import SocketServer
+import socketserver
 import struct
 import types
 from bitstring import Bits
@@ -26,7 +26,7 @@ class BaseStucture:
                     setattr(self, field[0], field[2])
 
     def init_from_dict(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             setattr(self, key, value)
 
     def size(self):
@@ -162,7 +162,7 @@ class OPREPDevList(BaseStucture):
             ('nExportedDevice', 'I', count) # Same for this guy
         ]
 
-        for key, value in dictArg.iteritems():
+        for key, value in dictArg.items():
             field = (str(key), value[0], value[1])
             self._fields_.append(field)
         
@@ -320,7 +320,7 @@ class EndPoint(BaseStucture):
 
 class USBRequest():
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             setattr(self, key, value)
 
 
@@ -440,7 +440,7 @@ class USBContainer:
         self.attached_devices[busID] = False
 
     def remove_usb_device(self, usb_device):        
-        for busid, dev in self.usb_devices.iteritems():
+        for busid, dev in self.usb_devices.items():
             if dev == usb_device:
                 del self.attached_devices[busid]
                 del self.usb_devices[busid]
@@ -475,7 +475,7 @@ class USBContainer:
         devices = {}
 
         i = 0
-        for busid, usb_dev in self.usb_devices.iteritems():
+        for busid, usb_dev in self.usb_devices.items():
             i += 1
             devices['device' + str(i)] = [USBIPDevice(), USBIPDevice(
                 usbPath='/sys/devices/pci0000:00/0000:00:01.2/usb1/' + busid,
@@ -502,17 +502,17 @@ class USBContainer:
 
     def run(self, ip='0.0.0.0', port=3240):
         #SocketServer.TCPServer.allow_reuse_address = True
-        self.server = SocketServer.ThreadingTCPServer((ip, port), USBIPConnection)
+        self.server = socketserver.ThreadingTCPServer((ip, port), USBIPConnection)
         self.server.usbcontainer = self
         self.server.serve_forever()
 
 
-class USBIPConnection(SocketServer.BaseRequestHandler):
+class USBIPConnection(socketserver.BaseRequestHandler):
     attached = False
     attachedBusID = ''
 
     def handle(self):
-        print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] New connection from', self.client_address
+        print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] New connection from', self.client_address)
         req = USBIPHeader()
         while 1:
             if not self.attached:
@@ -520,14 +520,14 @@ class USBIPConnection(SocketServer.BaseRequestHandler):
                 if not data:
                     break
                 req.unpack(data)
-                print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Header packet is valid'
-                print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Command is', hex(req.command)
+                print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Header packet is valid')
+                print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Command is', hex(req.command))
                 if req.command == 0x8005:
-                    print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Querying device list'
+                    print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Querying device list')
                     self.request.sendall(self.server.usbcontainer.handle_device_list().pack())
                 elif req.command == 0x8003:                    
                     busid = self.request.recv(5).strip()  # receive bus id
-                    print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Attaching to device with busid', busid
+                    print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Attaching to device with busid', busid)
                     self.request.recv(27)
                     self.request.sendall(self.server.usbcontainer.handle_attach(str(busid)).pack())
                     self.attached = True
@@ -544,7 +544,7 @@ class USBIPConnection(SocketServer.BaseRequestHandler):
                         cmd = USBIPCMDUnlink()
                         data = self.request.recv(cmd.size())
                         cmd.unpack(data)
-                        print '[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Detaching device with seqnum', cmd.seqnum
+                        print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Detaching device with seqnum', cmd.seqnum)
                         # We probably don't even need to handle that, the windows client doesn't even send this packet
                     else :
                         cmd = USBIPCMDSubmit()
@@ -573,6 +573,6 @@ class USBIPConnection(SocketServer.BaseRequestHandler):
                         try:
                             self.server.usbcontainer.usb_devices[self.attachedBusID].handle_usb_request(usb_req)
                         except:
-                            print '[' + bcolors.FAIL + 'USBIP' + bcolors.ENDC + '] Connection with client ' + str(self.client_address) + ' ended'
+                            print('[' + bcolors.FAIL + 'USBIP' + bcolors.ENDC + '] Connection with client ' + str(self.client_address) + ' ended')
                             break
         self.request.close()
