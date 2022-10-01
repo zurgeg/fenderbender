@@ -2,7 +2,6 @@
 import socketserver
 import struct
 import types
-from bitstring import Bits
 
 # Hey StackOverflow !
 class bcolors:
