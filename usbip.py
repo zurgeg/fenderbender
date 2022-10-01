@@ -1,10 +1,17 @@
-# https://github.com/Frazew/PythonUSBIP/blob/master/USBIP.py
+'''
+USBIP Library
+Originally for Python 2, converted by zurgeg to python three.
+https://github.com/Frazew/PythonUSBIP/blob/master/USBIP.py
+'''
 import socketserver
 import struct
 import types
 
 # Hey StackOverflow !
-class bcolors:
+class BColors:
+    """
+    ANSI Colors
+    """
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -70,7 +77,7 @@ class BaseStucture:
         for field in self._fields_:
             if type(field[1]) is types.InstanceType:
                 if BaseStucture in field[1].__class__.__bases__:
-                     values.append(getattr(self, field[0], 0).pack())
+                    values.append(getattr(self, field[0], 0).pack())
             else:
                 if 'si' == field[1]:
                     values.append(chr(getattr(self, field[0], 0)))
@@ -511,7 +518,7 @@ class USBIPConnection(socketserver.BaseRequestHandler):
     attachedBusID = ''
 
     def handle(self):
-        print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] New connection from', self.client_address)
+        print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] New connection from', self.client_address)
         req = USBIPHeader()
         while 1:
             if not self.attached:
@@ -519,14 +526,14 @@ class USBIPConnection(socketserver.BaseRequestHandler):
                 if not data:
                     break
                 req.unpack(data)
-                print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Header packet is valid')
-                print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Command is', hex(req.command))
+                print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] Header packet is valid')
+                print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] Command is', hex(req.command))
                 if req.command == 0x8005:
-                    print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Querying device list')
+                    print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] Querying device list')
                     self.request.sendall(self.server.usbcontainer.handle_device_list().pack())
                 elif req.command == 0x8003:                    
                     busid = self.request.recv(5).strip()  # receive bus id
-                    print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Attaching to device with busid', busid)
+                    print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] Attaching to device with busid', busid)
                     self.request.recv(27)
                     self.request.sendall(self.server.usbcontainer.handle_attach(str(busid)).pack())
                     self.attached = True
@@ -543,7 +550,7 @@ class USBIPConnection(socketserver.BaseRequestHandler):
                         cmd = USBIPCMDUnlink()
                         data = self.request.recv(cmd.size())
                         cmd.unpack(data)
-                        print('[' + bcolors.OKBLUE + 'USBIP' + bcolors.ENDC + '] Detaching device with seqnum', cmd.seqnum)
+                        print('[' + BColors.OKBLUE + 'USBIP' + BColors.ENDC + '] Detaching device with seqnum', cmd.seqnum)
                         # We probably don't even need to handle that, the windows client doesn't even send this packet
                     else :
                         cmd = USBIPCMDSubmit()
@@ -572,6 +579,6 @@ class USBIPConnection(socketserver.BaseRequestHandler):
                         try:
                             self.server.usbcontainer.usb_devices[self.attachedBusID].handle_usb_request(usb_req)
                         except:
-                            print('[' + bcolors.FAIL + 'USBIP' + bcolors.ENDC + '] Connection with client ' + str(self.client_address) + ' ended')
+                            print('[' + BColors.FAIL + 'USBIP' + BColors.ENDC + '] Connection with client ' + str(self.client_address) + ' ended')
                             break
         self.request.close()
